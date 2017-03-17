@@ -141,7 +141,7 @@ public class JedisSentinelPool extends JedisPoolAbstract {
 
       Jedis jedis = null;
       try {
-        jedis = new Jedis(hap.getHost(), hap.getPort());
+        jedis = new Jedis(hap.getHost(), hap.getPort(), connectionTimeout, soTimeout);
 
         List<String> masterAddr = jedis.sentinelGetMasterAddrByName(masterName);
 
@@ -160,8 +160,8 @@ public class JedisSentinelPool extends JedisPoolAbstract {
         // resolves #1036, it should handle JedisException there's another chance
         // of raising JedisDataException
         log.warn(
-          "Cannot get master address from sentinel running @ {}. Reason: {}. Trying next one.", hap,
-          e.toString());
+          "Cannot get master address from sentinel running @ {}. Reason: {}. Trying next one.",
+          hap, e.toString());
       } finally {
         if (jedis != null) {
           jedis.close();

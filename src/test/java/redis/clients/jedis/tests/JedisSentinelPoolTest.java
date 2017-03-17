@@ -3,17 +3,16 @@ package redis.clients.jedis.tests;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.junit.Before;
 import org.junit.Test;
 
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisSentinelPool;
-import redis.clients.jedis.Transaction;
+import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.tests.utils.JedisSentinelTestUtil;
@@ -160,6 +159,24 @@ public class JedisSentinelPoolTest {
     }
 
     assertTrue(pool.isClosed());
+  }
+
+  @Test(expected = JedisConnectionException.class)
+  public void sentinelConnectionShouldRespectTimeout() {
+    GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+
+    HostAndPort hostAndPort = new HostAndPort("10.0.0.0", Protocol.DEFAULT_SENTINEL_PORT);
+    Set<String> nonRoutable = Collections.singleton(hostAndPort.toString());
+
+    int connectionTimeout = Protocol.DEFAULT_TIMEOUT + 1000;
+
+    long begin = System.nanoTime();
+    try {
+      new JedisSentinelPool(MASTER_NAME, nonRoutable, config, connectionTimeout);
+    } finally {
+      long elapsed = (System.nanoTime() - begin);
+      assertTrue((elapsed / 1000000) > Protocol.DEFAULT_TIMEOUT);
+    }
   }
 
   private void forceFailover(JedisSentinelPool pool) throws InterruptedException {
